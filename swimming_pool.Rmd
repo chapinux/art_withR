@@ -1,0 +1,225 @@
+---
+title: "aRt with spatstat : impression of a swimming pool"
+author: "chapinux"
+date: "September 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+The idea of this tutorial is to use R to produce eye-candy plots. No semiology or scientific rigor here, just doodling alogoritmically with it.
+
+The following code is almost totally taken from Petr Keil seminal contribution to **reproducible art with R** and can be found on <http://www.petrkeil.com/?p=2707>. What you will find below is only reformluation and adaptation towards the goal of painting an impressionist swimming pool.
+
+I will intentionally mask every message and warning produced by the following R code : we are here to doodle, not to handle exceptions and secure code portions.
+
+## Libraries
+We use the wonderful `spatstat` library for some very useful functions (e.g. distmap), `RColorBrewer` for well balanced color ramps and palettes.
+
+```{r lib, message=FALSE, warning=FALSE}
+library(spatstat)
+library(RColorBrewer)
+```
+
+## Outputs , the problem of sizes 
+
+The major problem that arises when doodling with R is that the 'look' of the plot depends on the type of device you use, especially the sizes (size of points, characters, width of lines etc.) of the elements on the plots. There may be a way of fixing the size variation (by using only porportions insted of fixed values probably ) but most of the times , some adjustments have to be manually performed in order to get the proper line width according to the size of the device you are plotting in. So, don't worry if you don't obtain exactly the same plots as shown here, and adjust the sizes parameters until you get a fine plot.
+
+
+Let's build our swimmig pool impression
+
+## The polygons of light on water : Dirichlet/Voronoi to the rescue
+
+There must be tons of rendering techniques to recreate the interaction between light and water that form these shiny polygons on the bottom of swimming pools. They simulate the refraction/reflexion/diffusion of light beams or somethong like that, but this approach is far too complex for me. Interested readers can google caustic polygons or caustic patterns to get further information. 
+
+Instead, we will use a quick and dirty way of getting some polygons by using the Dirichlet (or Voronoï) tesselation of the spatstat library.
+
+
+### Setup
+
+`spatstat` use windows objects to define geometric areas in which data are observed and plot. They are `owin` objects, defined by their geometry. We doodle, so the geometry will be for now a unit square
+
+```{r win}
+w <- owin(c(0,1),c(0,1))
+```
+
+Voronoï tesselation is the production of a Voronoï diagram, which is "a partitioning of a plane into regions based on distance to points in a specific subset of the plane" according to [wikipedia](https://en.wikipedia.org/wiki/Voronoi_diagram)
+
+So we start by creating a set of points around which the tesselation will be made :
+
+```{r points, cache=TRUE}
+pts <- rpoispp(lambda=45 , win= w)
+plot(pts)
+```
+
+The function `rpoispp` is a function that generate a **random point pattern** in a given window. In its simple form, it uses a parameter, `lambda`, defining the intensity of the Poisson process that generate the points. The higher lambda, the greater the number of points.
+
+## First set of polygons 
+
+Now, lets perform the Voronoï tesselation using these points, and plot it : 
+
+```{r voron1, cache=TRUE, message=FALSE}
+vor1 <- dirichlet(pts)
+plot(vor1)
+```
+
+To make more polygons,we can increase the intensity (lambda) of the poisson process to have more points in the pattern :
+
+
+```{r voron2, cache=TRUE, message=FALSE}
+pts <- rpoispp(lambda=65 , win= w)
+vor1 <- dirichlet(pts)
+plot(vor1)
+```
+
+
+## Second set of polygons 
+We create another set of polygons following the same recipe, but with fewer polygons in it. 
+The idea is to superpose the 2 set of polygons, in order to simulate the fact that light polygons appear with dfifferent degrees of brightness :
+
+```{r voron3, cache=TRUE, message=FALSE}
+pts2 <- rpoispp(lambda=40 , win= w)
+vor2 <- dirichlet(pts2)
+plot(vor1,main="2 sets of polygons")
+plot(vor2, add=TRUE)
+```
+
+The result in not very appealing, let's turn the background black, and make the polygons white :
+
+## Adding light (sort of)
+
+For now, we add light by reversing colors : white background becomes black, black lines of polygons become white: 
+```{r light, message=FALSE}
+plot(w, col="black")
+plot(vor1, col="white", add=TRUE)
+plot(vor2, col="white", add=TRUE)
+```
+
+In this particular context, the background of the plot is the window, not the background attribut of the `par()` function.
+
+Now we create 2 tweaked RGBA colors : a solid white, with medium alpha value, and a more transparent white, with a little bit of yellow in it. We apply this color to each of the polygons sets, and see what happens (zoom to have a better view) : 
+
+```{r light2,fig.width=8, fig.height=8 }
+whiteish = rgb(t(col2rgb("#ffffee")/255), alpha = 0.25)
+whitesolid=  rgb(t(col2rgb("white")/255), alpha = 0.5)
+plot(w, col="black")
+plot(vor1, col=whitesolid, add=TRUE)
+plot(vor2, col=whiteish, add=TRUE)
+```
+
+
+It seems to me that , on screen displays, even 0.5 is high for alpha, so I decrease the alpha value.
+I also increase the width of the lines, because for now it is too thin for a "swimming pool feeling" polygon:
+
+```{r light3,fig.width=8, fig.height=8 }
+whiteish = rgb(t(col2rgb("#ffffee")/255), alpha = 0.15)
+whitesolid=  rgb(t(col2rgb("white")/255), alpha = 0.3)
+plot(w, col="black")
+plot(vor1, col=whitesolid, add=TRUE, lwd=2)
+plot(vor2, col=whiteish, add=TRUE, lwd=2)
+```
+
+## Adding layers : the lightsaber trick
+
+A little trick here : if the lines of the polygons have a given width, the center of the lines should be purely white, and the "borders" of the lines of the polygons could be less shiny, but more colorful. Remember star wars lightsabers : core is white, borders are coloured. Because of the superposition, alpha values have to be adjusted (decreased) to stay reasonably shiny, that's why we create duplicates of previous colors.
+
+Let's see the difference on a set of polygons (vor1) : 
+
+```{r light4,fig.width=8, fig.height=8 }
+par(mfrow=c(1,2), mar=c(0,0,0,0))
+#first plot unchanged
+plot(w, col="black")
+plot(vor1, col=whitesolid, add=TRUE, lwd=2)
+plot(vor2, col=whiteish, add=TRUE, lwd=2)
+#second plot with trick
+whitesolid2=  rgb(t(col2rgb("white")/255), alpha = 0.3)
+whiteish2 = rgb(t(col2rgb("#ffffdd")/255), alpha = 0.15)
+plot(w, col="black")
+plot(vor1, col=whitesolid2, add=TRUE, lwd=2)
+plot(vor1, col=whiteish2, add=TRUE, lwd=5)
+plot(vor2, col=whiteish, add=TRUE, lwd=2)
+```
+
+I like it better that way, the slight neon effect adds something more close to light. Zoom a lot (really a lot) to see the trick. 
+Ok now, we make it blue
+
+## Water is blue (da ba de,  da be die)
+Cool !  We have a not so bad polygon pattern of polygons that mimic water-light interaction on the bottom of swimming pools.
+Now, let's produce the very bottom of the swimming pool: blue stuff.
+Obviously, uniform blue, no matter which one , is not very satisfying :  
+
+```{r  blue1,fig.width=8, fig.height=8 }
+par(mfrow=c(2,2), mar=c(0,0,0,0))
+whitesolid2=  rgb(t(col2rgb("white")/255), alpha = 0.2)
+whiteish2 = rgb(t(col2rgb("#ffffdd")/255), alpha = 0.15)
+plot(w, col="royalblue2")
+plot(vor1, col=whitesolid2, add=TRUE, lwd=2)
+plot(vor1, col=whiteish2, add=TRUE, lwd=4)
+plot(vor2, col=whiteish, add=TRUE, lwd=2)
+#
+plot(w, col="skyblue2")
+plot(vor1, col=whitesolid2, add=TRUE, lwd=2)
+plot(vor1, col=whiteish2, add=TRUE, lwd=4)
+plot(vor2, col=whiteish, add=TRUE, lwd=2)
+#
+plot(w, col="steelblue1")
+plot(vor1, col=whitesolid2, add=TRUE, lwd=2)
+plot(vor1, col=whiteish2, add=TRUE, lwd=4)
+plot(vor2, col=whiteish, add=TRUE, lwd=2)
+#
+plot(w, col="turquoise2")
+plot(vor1, col=whitesolid2, add=TRUE, lwd=2)
+plot(vor1, col=whiteish2, add=TRUE, lwd=4)
+plot(vor2, col=whiteish, add=TRUE, lwd=2)
+```
+
+So we will create a background that is less uniform !
+
+## Generating background
+
+We start by getting few points in the window. I set seed because I like the disposition I got, and I want it every time now.
+
+```{r bottom}
+set.seed(16211)
+pts <- runifpoint(6, win=w)
+ptsdist <- distmap(pts, dimyx=c(2000, 2000))
+plot(pts)
+plot(ptsdist)
+```
+
+
+`distmap` is a magical function to compute distance to a set of points or segments for every pixel of an image.
+Here I set the size of the image to 2000x2000 to have a good resoluion. The function produce these gloomy zones of colors around the points. We should make these gloomy balls blue (and that sentence should not be taken out of context)
+
+
+We use the `Blues` palette of colors of RColorBrewer 
+```{r bottom2}
+mycol  <- colorRampPalette(brewer.pal(8,"Blues"))(70)
+plot(ptsdist, legend=FALSE, main="", frame=FALSE, box=FALSE, ribbon=FALSE, col=mycol)
+
+
+Lambda <- 0.2
+distexp <- Lambda*exp(-Lambda*ptsdist)
+
+
+```
+```{r bottom3}
+
+nblvl <- 10
+mycol  <- colorRampPalette(brewer.pal(8,"Blues"))(70)
+
+
+colcontour = rgb(t(col2rgb("#ccccff")/255), alpha = 0.01)
+plot(distexp, legend=FALSE, main="", frame=FALSE, box=FALSE, ribbon=FALSE, col=mycol)
+contour(distexp, add=T, col="orange",lwd=2, drawlabels=F, nlevels=nblvl)
+```
+
+
+
+
+
+
+
