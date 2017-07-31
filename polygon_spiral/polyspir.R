@@ -4,7 +4,7 @@ library(maptools)
 library(sp)
 library(dplyr)
 library(rgeos)
-
+library(vec2dtransf)
 
 ids <- factor(c("1", "2", "3", "4", "5", "6"))
 
@@ -186,9 +186,11 @@ dev.off()
 plot(baseP)
 plot(currentP, add=T)
 
+currentP <- baseP
+
 while(currentP@polygons[[1]]@area >= 1){
   
-  plot(sbpp, add=T)
+  plot(spbb, add=T)
   
   bbXlong <- max(abs (spbb@polygons[[1]]@Polygons[[1]]@coords[,1]-
                         spbb@polygons[[1]]@Polygons[[1]]@coords[,2]))
@@ -204,7 +206,7 @@ while(currentP@polygons[[1]]@area >= 1){
                                     translaX ,translaY = 0)  
   
   shrinkP <- applyTransformation(transfo1, currentP)
-  Sys.sleep(2)
+  Sys.sleep(0.3)
   plot(shrinkP, add=T)
   
     
