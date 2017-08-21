@@ -3,6 +3,7 @@ library(maptools)
 library(sp)
 library(dplyr)
 library(rgeos)
+library(scales)
 
 g <-erdos.renyi.game(n=100, p.or.m = 150 , type = "gnm")
 V(g)$deg <- centr_degree(g,mode = "total")$res
@@ -25,7 +26,7 @@ plot.igraph(g,
 dev.off()
 
 spCircle<- function (center, radius, nbpts, anglemin, anglemax ) {
-  spangles <-   order(runif(nbpts) * (anglemax-anglemin) + anglemin )
+  spangles <-   seq(from=anglemin, to=anglemax, length.out = nbpts)
 
   x <- center[1] +  cos(spangles)*radius
   y <- center[2] +  sin(spangles)*radius
@@ -37,8 +38,17 @@ DemiccExterneGauche <- spCircle(c(0,0), 10, 1000, pi/2, 3*pi/2)
 demiCDroite <- spCircle(c(0,5),5,500,-pi/2, pi/2)
 demiCGauche <- spCircle(c(0,-5),5,500,pi/2, 3*pi/2)
 
-petitCercleHaut <- spCircle(c(0,5), 2, 400, 2*pi,0)
-petitCercleBas <- spCircle(c(0,-5), 2, 400, 2*pi,0)
+petitCercleHaut <- spCircle(c(0,5), 2, 200, 2*pi,0)
+petitCercleBas <- spCircle(c(0,-5), 2, 200, 2*pi,0)
+
+
+
+
+cchaut <- rbind(petitCercleHaut, petitCercleHaut[1,])
+ccbas <- rbind(petitCercleBas, petitCercleBas[1,])
+
+
+
 
 
 DemiccExterneGauche <- arrange(DemiccExterneGauche, desc(y))
@@ -46,53 +56,22 @@ demiCGauche <- arrange(demiCGauche, y)
 demiCDroite <-arrange(demiCDroite,y)
 yin <- rbind(DemiccExterneGauche, demiCGauche, demiCDroite)
 yin <- rbind(yin, yin[1, ])  # join
-PsYin <- Polygons(list(Polygon(yin, hole = T)), ID = "yin")
-
-
-ccbas <- rbind(petitCercleBas, petitCercleBas[1,])
-PsCbas <- Polygons(list(Pccbas <- Polygon(ccbas, hole = FALSE )), ID="yin inclus")
-
-plot(SpatialPolygons(list(PsCbas)))
+PsCbas <- Polygons(list(Polygon(ccbas, hole = FALSE )), ID="yin inclus")
+PsYin <- Polygons(list(Polygon(yin, hole = F),Polygon(cchaut, hole = TRUE )), ID = "yin")
 spYin <- SpatialPolygons(list(PsYin, PsCbas))
-
-
-
-plot(spYin, col="blue")
-
-
-
-cchaut <- rbind(petitCercleHaut, petitCercleHaut[1,])
-Pcchaut <- Polygon(cchaut, hole = F)
-
-
-plot(spYin)
-
 
 
 DemiccExterneDroite <- arrange(DemiccExterneDroite, desc(y))
 yang <- rbind(DemiccExterneDroite, demiCGauche, demiCDroite)
 yang <- rbind(yang, yang[1,])
-Pyang <- Polygon(yang, hole = FALSE)
-ccbas <- rbind(petitCercleBas, petitCercleBas[1,])
-Pccbas <- Polygon(ccbas, hole = TRUE )
-Pcchaut <- Polygon(cchaut, hole = FALSE)
-holeBas <- Polygons(list(Pccbas), ID="hole bas")
-
-holeBas@Polygons[[1]]@hole <- TRUE
-PsYang <- Polygons(list(Pyang, Pcchaut), ID="yang")
-
-spYang <- SpatialPolygons(list(PsYang, holeBas))
+PsChaut <- Polygons(list(Polygon(cchaut, hole = FALSE)), ID="yang inclus") 
+PsYang <- Polygons(list(Polygon(yang, hole = FALSE),Polygon(ccbas, hole = TRUE )), ID = "yang")
+spYang <- SpatialPolygons(list(PsYang, PsChaut))
 
 
 
-
-dev.off()
-
-
-plot(spYang)
-plot(spYang, col="green")
-
-
+plot(spYin, col="white")
+plot(spYang, col="black", add=T)
 
 
 
@@ -100,21 +79,19 @@ plot(spYang, col="green")
 #sampling spatial pour remplir avec des trucs
 
 
-maptools::checkPolygonsHoles(PsYang)
-spYang <- SpatialPolygons(list(PsYang, holeBas))
-
-
-plot(spYang)
 
 ptsYang <- spsample(spYang, type = "random", n=8000)
-
+ptsYin <- spsample(spYin, type = "random", n=8000)
 
 dev.off()
-plot(ptsYang, pch=21, col="blue",cex=0.1)
+par(bg="grey50")
+plot(ptsYang, pch=21, col="black",cex=0.1)
+plot(ptsYin, pch=21, col="white",cex=0.1, add=T)
 
-plot(spYang)
 
-ptsYang %over% SpatialPolygons(list(Pccbas))
+
+
+
 
 
 
