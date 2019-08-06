@@ -9,7 +9,7 @@ library(scales)
 library(dplyr)
 
 
-
+setwd("~/art_withR/coral_grow/")
 
 ll<- read_delim("lgc.csv", delim=" ", col_types = list(col_character(), col_character()))
 names(ll)<- c("O","D")
