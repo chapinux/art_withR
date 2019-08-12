@@ -1,44 +1,44 @@
 library(dplyr)
 library(icosa)
 
-hexG <-  hexagrid(12)
+hexG <-  hexagrid(38)
 plot3d(hexG, guides = F, arcs = T)
 
 #objet sp à plat
 
-#spHexG <-  newsp(hexG)
-#plot(spHexG)
+spHexG <-  newsp(hexG)
+plot(spHexG)
 
-#library(sf)
-#sf_hexgrid <-  st_as_sf(spHexG@sp)
-#plot(sf_hexgrid)
-#dev.off()
+library(sf)
+sf_hexgrid <-  st_as_sf(spHexG@sp)
+plot(sf_hexgrid)
+dev.off()
 
-# library(rgdal)
-# file <-
-#   system.file("extdata", "land_polygons_z3.shx", package = "icosa")
-# worldBorders <- readOGR(file, "land_polygons_z3")
-# 
-# plot(sf_hexgrid)
-# 
-# #projection dans le système de la grille
-# crsSfHex <-  st_crs(sf_hexgrid)
-# world <-  spTransform(worldBorders, spHexG@proj4string)
-# plot(spHexG)
-# plot(world,col="orange", add=T)
-# 
-# plot(spHexG)
-# plot(world,col="orange", add=T)
-# 
-# facesOccupied <-  occupied(hexG, world)
-# 
-# plot3d(hexG,
-#        guides = F,
-#        lwd = 0.1,
-#        col = "grey")
-# faces3d(facesOccupied, col = "orange")
+library(rgdal)
+file <-
+  system.file("extdata", "land_polygons_z3.shx", package = "icosa")
+worldBorders <- readOGR(file, "land_polygons_z3")
 
+plot(sf_hexgrid)
 
+#projection dans le système de la grille
+crsSfHex <-  st_crs(sf_hexgrid)
+world <-  spTransform(worldBorders, spHexG@proj4string)
+plot(spHexG)
+plot(world,col="orange", add=T)
+
+plot(spHexG)
+plot(world,col="orange", add=T)
+
+facesOccupied <-  occupied(hexG, world)
+
+plot3d(hexG,
+       guides = F,
+       lwd = 0.1,
+       col = "grey")
+faces3d(facesOccupied, col = "orange")
+
+extrude3d()
 
 # ###########""
 # 
@@ -170,7 +170,7 @@ extrudeOneFace <-  function(faceName, extrudPct, verbose=FALSE){
 }
 
 
-grid <-  hexagrid(18)
+grid <-  hexagrid(18, radius=10)
 
 
 faces <-  facelayer(grid)
@@ -184,19 +184,20 @@ mypalette <-  brewer.pal(8, "Blues")
 
 rgl.close()
 par3d(windowRect=c(658,52,1920,1022))
-plot3d(grid, guides=F)
+#plot3d(grid, guides=F)
+rgl.bg(fogtype = "linear", color = "lightgoldenrod1", sphere = T)
 rgl.clear(type = "lights")
-light3d( theta = 40, phi=30)
+light3d( theta = 90, phi=45)
 
 #refreshDisplay(hexG)
 #toutes les faces sauf la première qui n'est pas un hexagone
 nbMax <- nrow(grid@faces)
-listfaces <-  sample(c(rownames(grid@faces)), 800 , replace = F)
+listfaces <-  sample(c(rownames(grid@faces)), 100 , replace = F)
 
 
 
 mapply(extrudeOneFace, listfaces , 
-       extrudPct = faces@values * 0.15)
+       extrudPct = faces@values * 0.85)
 
 
 
@@ -207,10 +208,10 @@ varyingTheta <- 0
 varyingPhi <- 0
 fov = 180
 for (f in listfaces){
-  #cat(f ,"tutu\n")
+  cat(f ,"tutu\n")
   valeurExtrud <-  faces@values[which(faces@names == f )]
   #valeurExtrud <-  0.2
-  extrudeOneFace(f, valeurExtrud*0.1)
+  extrudeOneFace(f, valeurExtrud*0.8)
   #varyingTheta <- varyingTheta + 0.2
   # varyingPhi <- varyingPhi + (90 / (length(listfaces) ))
   # cat(varyingPhi, " ")
@@ -220,5 +221,9 @@ for (f in listfaces){
 }
 
 
+movie3d(spin3d(axis = c(0, 0.5, 1), rpm= 10), duration = 6,
+        dir = "~/Images/", movie="spinstar")
+
+play3d(spin3d(axis = c(0, 0.5, 1), rpm= 10), duration = 7)
 
 
